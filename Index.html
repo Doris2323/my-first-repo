@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doris 每日儀表板</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+      :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --glass-bg: rgba(255, 255, 255, 0.85);
+        --glass-border: 1px solid rgba(255, 255, 255, 0.3);
+        --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        --text-main: #2d3748;
+        --text-secondary: #718096;
+        --radius: 24px;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        font-family: 'Noto Sans TC', sans-serif;
+        background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+        min-height: 100vh;
+        color: var(--text-main);
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center; 
+      }
+
+      /* 主要容器：限制最大寬度 */
+      .dashboard-container {
+        width: 100%;
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      /* 標題區塊 */
+      header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      h1 {
+        font-size: 2rem;
+        color: #4a5568;
+        margin-bottom: 8px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .subtitle {
+        color: var(--text-secondary);
+        font-size: 1rem;
+        background: rgba(255,255,255,0.4);
+        padding: 5px 15px;
+        border-radius: 20px;
+        display: inline-block;
+      }
+
+      /* 格狀佈局：左邊天氣，右邊日記 */
+      .grid-layout {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr; /* 左邊佔 1 份，右邊佔 1.5 份 */
+        gap: 25px;
+        align-items: start;
+      }
+
+      /* 手機版 RWD：變成單欄 */
+      @media (max-width: 768px) {
+        .grid-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* 通用卡片樣式 (玻璃擬態) */
+      .card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: var(--radius);
+        border: var(--glass-border);
+        box-shadow: var(--shadow);
+        padding: 30px;
+        transition: transform 0.3s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+      }
+
+      /* 左側：天氣卡片 */
+      .weather-section {
+        background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+        color: white;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* 裝飾圓圈 */
+      .circle-bg {
+        position: absolute;
+        width: 150px;
+        height: 150px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+        top: -50px;
+        right: -50px;
+      }
+
+      .weather-emoji {
+        font-size: 5rem;
+        margin: 10px 0;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+      }
+
+      .temp-main {
+        font-size: 3.5rem;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .weather-desc {
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+        opacity: 0.9;
+      }
+
+      .weather-details {
+        display: flex;
+        justify-content: space-around;
+        background: rgba(0,0,0,0.15);
+        padding: 15px;
+        border-radius: 15px;
+        margin-top: 15px;
+      }
+
+      .detail-item span {
+        display: block;
+        font-size: 0.8rem;
+        opacity: 0.8;
+      }
+      
+      .detail-item strong {
+        font-size: 1.1rem;
+      }
+
+      /* 右側：表單卡片 */
+      .form-section h2 {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 8px;
+        color: #4a5568;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 16px;
+        font-family: inherit;
+        background: rgba(255, 255, 255, 0.9);
+        transition: all 0.3s ease;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      textarea.form-control {
+        resize: vertical;
+        min-height: 120px;
+      }
+
+      /* 按鈕樣式 */
+      .submit-btn {
+        width: 100%;
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        padding: 16px;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 6px rgba(102, 126, 234, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .submit-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 7px 14px rgba(102, 126, 234, 0.3);
+      }
+
+      .submit-btn:disabled {
+        opacity: 0.7;
+        cursor: wait;
+        background: #a0aec0;
+      }
+
+      /* 狀態訊息 */
+      #submitMessage {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+        font-weight: 500;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .msg-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+      .msg-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* 歡迎小區塊 (放在最下面) */
+      .footer-info {
+        margin-top: 30px;
+        text-align: center;
+        font-size: 0.9rem;
+        color: #718096;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="dashboard-container">
+      
+      <header>
+        <h1>🌟 Doris 每日儀表板</h1>
+        <div class="subtitle">
+          <span id="current-date">載入日期中...</span> | 
+          <span id="current-time">--:--:--</span>
+        </div>
+      </header>
+
+      <div class="grid-layout">
+        
+        <div class="card weather-section" id="weather-container">
+          <div class="circle-bg"></div>
+          <div style="padding: 40px 0;">
+            <div style="font-size: 40px; margin-bottom: 20px;">🌤️</div>
+            <p>正在連線氣象衛星...</p>
+          </div>
+        </div>
+
+        <div class="card form-section">
+          <h2>📝 記錄今天</h2>
+          
+          <form id="logForm" onsubmit="submitLog(event)">
+            <div class="form-group">
+              <label for="mood">心情指數</label>
+              <select id="mood" class="form-control" required>
+                <option value="" disabled selected>請選擇...</option>
+                <option value="😊 非常開心">😊 非常開心</option>
+                <option value="🙂 開心">🙂 開心</option>
+                <option value="😐 普通">😐 普通</option>
+                <option value="😔 有點難過">😔 有點難過</option>
+                <option value="😢 很難過">😢 很難過</option>
+                <option value="😤 生氣">😤 生氣</option>
+                <option value="😴 疲憊">😴 疲憊</option>
+                <option value="😌 放鬆">😌 放鬆</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="note">發生了什麼事？</label>
+              <textarea
+                id="note"
+                class="form-control"
+                placeholder="寫下今天的小故事或是值得紀念的時刻..."
+                required
+              ></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+              <span>💾 儲存記錄</span>
+            </button>
+          </form>
+
+          <div id="submitMessage" style="display: none;"></div>
+        </div>
+      </div>
+
+      <div class="footer-info">
+       ✨ 打造屬於你的生活管理工具
+      </div>
+
+    </div>
+
+    <script>
+       // 顯示當前時間
+       function updateTime() {
+        const now = new Date();
+        document.getElementById('current-time').textContent = now.toLocaleString('zh-TW');
+      }
+
+      updateTime();
+      setInterval(updateTime, 1000);
+
+      // 2. 載入天氣
+      function loadWeather() {
+        google.script.run
+          .withSuccessHandler(renderWeatherCard)
+          .withFailureHandler(renderWeatherError)
+          .getTaipeiWeather();
+      }
+
+      function renderWeatherCard(weather) {
+        const container = document.getElementById('weather-container');
+        container.innerHTML = `
+          <div class="circle-bg"></div>
+          <h2>台北市</h2>
+          <div class="weather-emoji">${weather.emoji}</div>
+          <div class="temp-main">${weather.temperature}°</div>
+          <div class="weather-desc">${weather.description}</div>
+          
+          <div class="weather-details">
+            <div class="detail-item">
+              <span>風速</span>
+              <strong>${weather.windspeed} km/h</strong>
+            </div>
+            <div class="detail-item">
+              <span>更新</span>
+              <strong>${new Date(weather.time).getHours()}:00</strong>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderWeatherError(error) {
+        const container = document.getElementById('weather-container');
+        container.innerHTML = `<p style="margin-top:40px;">⚠️ 無法取得天氣資訊<br><small>${error.message}</small></p>`;
+      }
+
+      // 3. 表單提交處理 (包含防呆與 Timeout)
+      let submitTimeout = null;
+
+      function submitLog(event) {
+        event.preventDefault();
+
+        const mood = document.getElementById('mood').value;
+        const note = document.getElementById('note').value;
+        const submitBtn = document.getElementById('submitBtn');
+        const btnOriginalText = submitBtn.innerHTML;
+
+        // 簡單驗證
+        if (!mood || !note.trim()) {
+          showMessage('請填寫完整資訊！', 'error');
+          return;
+        }
+
+        // 鎖定按鈕狀態
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>⏳ 儲存中...</span>';
+        hideMessage();
+
+        // 設定 15秒 超時保護
+        submitTimeout = setTimeout(function() {
+          resetFormState();
+          showMessage('⚠️ 請求逾時，請檢查網路連線後重試', 'error');
+        }, 15000);
+
+        // 呼叫後端
+        google.script.run
+          .withSuccessHandler((result) => {
+            clearTimeout(submitTimeout); // 清除計時器
+            
+            // 優先恢復按鈕
+            resetFormState(); 
+
+            // 檢查後端回傳結果
+          
+            if (result.success) {
+              showMessage('✅ ' + result.message, 'success');
+              // 清空輸入框
+              document.getElementById('mood').value = '';
+              document.getElementById('note').value = '';
+              
+              // 3秒後隱藏成功訊息
+              setTimeout(hideMessage, 3000);
+            } else {
+              showMessage('❌ ' + result.message, 'error');
+            }
+          })
+          .withFailureHandler((error) => {
+            clearTimeout(submitTimeout);
+            resetFormState();
+            showMessage('❌ 發生系統錯誤：' + error.message, 'error');
+          })
+          .saveDailyLog(mood, note);
+      }
+
+      function resetFormState() {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>💾 儲存記錄</span>';
+      }
+
+      function showMessage(msg, type) {
+        const el = document.getElementById('submitMessage');
+        el.textContent = msg;
+        el.className = type === 'success' ? 'msg-success' : 'msg-error';
+        el.style.display = 'block';
+      }
+
+      function hideMessage() {
+        document.getElementById('submitMessage').style.display = 'none';
+      }
+    </script>
+  </body>
+</html>
